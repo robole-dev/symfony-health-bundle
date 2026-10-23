@@ -1,0 +1,119 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Robole dependency inventory 1.0",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "timestamp",
+        "status",
+        "lock_hash",
+        "production_packages",
+        "development_packages",
+        "packages",
+        "constraints"
+    ],
+    "properties": {
+        "schema_version": {
+            "const": "1.0"
+        },
+        "timestamp": {
+            "$ref": "health-1.0.json#/$defs/utcTimestamp"
+        },
+        "status": {
+            "$ref": "health-1.0.json#/$defs/status"
+        },
+        "lock_hash": {
+            "$ref": "health-1.0.json#/$defs/lockHash"
+        },
+        "production_packages": {
+            "$ref": "health-1.0.json#/$defs/packageCount"
+        },
+        "development_packages": {
+            "$ref": "health-1.0.json#/$defs/packageCount"
+        },
+        "packages": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "version",
+                    "type",
+                    "dependency_type"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9_.-]*/[a-z0-9][a-z0-9_.-]*$"
+                    },
+                    "version": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "dependency_type": {
+                        "enum": [
+                            "production",
+                            "development"
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "constraints": {
+            "type": "object",
+            "required": [
+                "require",
+                "require-dev",
+                "conflict",
+                "config"
+            ],
+            "properties": {
+                "require": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "require-dev": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "conflict": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "config": {
+                    "type": "object",
+                    "required": [
+                        "platform"
+                    ],
+                    "properties": {
+                        "platform": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "const": false
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false
+}

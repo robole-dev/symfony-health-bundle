@@ -1,0 +1,258 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Robole health report 1.0",
+    "type": "object",
+    "required": [
+        "schema_version",
+        "timestamp",
+        "status",
+        "application",
+        "system",
+        "dependencies",
+        "checks"
+    ],
+    "properties": {
+        "schema_version": {
+            "const": "1.0"
+        },
+        "timestamp": {
+            "$ref": "#/$defs/utcTimestamp"
+        },
+        "status": {
+            "$ref": "#/$defs/status"
+        },
+        "application": {
+            "type": "object",
+            "required": [
+                "name",
+                "environment",
+                "version",
+                "symfony_version",
+                "sulu_version",
+                "git_commit",
+                "git_branch",
+                "deployed_at"
+            ],
+            "properties": {
+                "name": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "environment": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "version": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "symfony_version": {
+                    "type": "string"
+                },
+                "sulu_version": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "git_commit": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "pattern": "^[a-f0-9]{7,64}$"
+                },
+                "git_branch": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "deployed_at": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/utcTimestamp"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "system": {
+            "type": "object",
+            "required": [
+                "php_version",
+                "php_sapi",
+                "memory_limit",
+                "symfony_version",
+                "environment",
+                "debug",
+                "timezone",
+                "utc_time"
+            ],
+            "properties": {
+                "php_version": {
+                    "type": "string"
+                },
+                "php_sapi": {
+                    "type": "string"
+                },
+                "memory_limit": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "symfony_version": {
+                    "type": "string"
+                },
+                "environment": {
+                    "type": "string"
+                },
+                "debug": {
+                    "type": "boolean"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "utc_time": {
+                    "$ref": "#/$defs/utcTimestamp"
+                },
+                "extensions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true
+                }
+            },
+            "additionalProperties": false
+        },
+        "dependencies": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/dependencySummary"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "checks": {
+            "type": "object",
+            "propertyNames": {
+                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+            },
+            "additionalProperties": {
+                "$ref": "#/$defs/check"
+            }
+        }
+    },
+    "additionalProperties": false,
+    "$defs": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "healthy",
+                "warning",
+                "critical",
+                "unknown",
+                "unsupported"
+            ]
+        },
+        "utcTimestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+        },
+        "lockHash": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "packageCount": {
+            "type": [
+                "integer",
+                "null"
+            ],
+            "minimum": 0
+        },
+        "dependencySummary": {
+            "type": "object",
+            "required": [
+                "status",
+                "lock_hash",
+                "production_packages",
+                "development_packages"
+            ],
+            "properties": {
+                "status": {
+                    "$ref": "#/$defs/status"
+                },
+                "lock_hash": {
+                    "$ref": "#/$defs/lockHash"
+                },
+                "production_packages": {
+                    "$ref": "#/$defs/packageCount"
+                },
+                "development_packages": {
+                    "$ref": "#/$defs/packageCount"
+                }
+            },
+            "additionalProperties": false
+        },
+        "check": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "$ref": "#/$defs/status"
+                },
+                "duration_ms": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "code": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                },
+                "metrics": {
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    },
+                    "additionalProperties": {
+                        "type": [
+                            "number",
+                            "boolean",
+                            "null"
+                        ]
+                    }
+                },
+                "components": {
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                    },
+                    "additionalProperties": {
+                        "$ref": "#/$defs/check"
+                    }
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

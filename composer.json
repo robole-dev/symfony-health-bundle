@@ -1,0 +1,64 @@
+{
+    "name": "robole/symfony-health-bundle",
+    "description": "Authenticated health reports and deployment inventories for Symfony applications.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "composer-runtime-api": "^2.2",
+        "composer/semver": "^3.4",
+        "psr/cache": "^3.0",
+        "psr/container": "^2.0",
+        "symfony/config": "^7.4 || ^8.0",
+        "symfony/dependency-injection": "^7.4 || ^8.0",
+        "symfony/framework-bundle": "^7.4 || ^8.0",
+        "symfony/http-foundation": "^7.4 || ^8.0",
+        "symfony/http-kernel": "^7.4 || ^8.0",
+        "symfony/routing": "^7.4 || ^8.0"
+    },
+    "require-dev": {
+        "doctrine/dbal": "^3.10 || ^4.3",
+        "doctrine/migrations": "^3.9",
+        "friendsofphp/php-cs-fixer": "^3.90",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^12.0",
+        "symfony/cache": "^7.4 || ^8.0",
+        "symfony/messenger": "^7.4 || ^8.0",
+        "symfony/yaml": "^7.4 || ^8.0"
+    },
+    "suggest": {
+        "doctrine/doctrine-bundle": "Automatically provides the default DBAL connection for the database check.",
+        "doctrine/doctrine-migrations-bundle": "Provides the optional Doctrine Migrations dependency factory.",
+        "symfony/messenger": "Enables opt-in, read-only transport statistics."
+    },
+    "autoload": {
+        "files": ["src/SymfonyHealthBundle.php"],
+        "psr-4": {
+            "Robole\\SymfonyHealthBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Robole\\SymfonyHealthBundle\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "symfony": {
+            "bundle-class": "Robole\\SymfonyHealthBundle\\RoboleHealthBundle",
+            "require": "^7.4 || ^8.0"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": false
+    },
+    "archive": {
+        "exclude": ["/tests", "/.github", "/var", "/vendor", "/composer.lock", "/.idea", "/.phpunit.cache", "/*.cache"]
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "cs:check": "php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "php-cs-fixer fix"
+    }
+}

@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }} / Symfony ${{ matrix.symfony }} / DBAL ${{ matrix.dbal }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {php: '8.4', symfony: '7.4', dbal: '^3.10'}
+          - {php: '8.5', symfony: '7.4', dbal: '^4.3'}
+          - {php: '8.4', symfony: '8.0', dbal: '^4.3'}
+          - {php: '8.5', symfony: '8.1', dbal: '^4.3'}
+    env:
+      SYMFONY_VERSION: ${{ matrix.symfony }}
+      DBAL_CONSTRAINT: ${{ matrix.dbal }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, mbstring, pdo_sqlite, xml, xmlwriter, zip
+          coverage: none
+          tools: composer:v2
+      - name: Constrain Symfony components for this compatibility job
+        run: |
+          php <<'PHP'
+          <?php
+          $data = json_decode(file_get_contents('composer.json'), true, flags: JSON_THROW_ON_ERROR);
+          $version = getenv('SYMFONY_VERSION').'.*';
+          foreach (['require', 'require-dev'] as $section) {
+              foreach ($data[$section] as $package => $constraint) {
+                  if (str_starts_with($package, 'symfony/')) {
+                      $data[$section][$package] = $version;
+                  }
+              }
+          }
+          // Pin transitive Symfony components too; contracts/polyfills use separate version lines.
+          foreach (['clock', 'console', 'error-handler', 'event-dispatcher', 'filesystem', 'finder', 'options-resolver', 'process', 'stopwatch', 'string', 'var-dumper', 'var-exporter'] as $component) {
+              $data['require-dev']['symfony/'.$component] = $version;
+          }
+          $data['require-dev']['doctrine/dbal'] = getenv('DBAL_CONSTRAINT');
+          file_put_contents('composer.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+          PHP
+      - name: Install maintained versions with normal advisory protection
+        if: matrix.symfony != '8.0'
+        run: composer update --no-interaction --prefer-dist
+      - name: Install EOL branch for compatibility tests only
+        if: matrix.symfony == '8.0'
+        # Symfony 8.0 is unmaintained. This exception applies only to this disposable CI job.
+        run: composer update --no-interaction --prefer-dist --no-security-blocking
+      - run: composer validate --strict
+      - run: composer test
+      - run: composer analyse
+      - name: Check style on the package's minimum PHP version
+        if: matrix.php == '8.4' && matrix.symfony == '7.4'
+        run: composer cs:check
+
+  installation:
+    name: Packaged installation without optional components
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, mbstring, xml, zip
+          coverage: none
+          tools: composer:v2
+      - run: composer validate --strict
+      - name: Create a production distribution
+        run: |
+          mkdir -p var/dist var/standalone
+          composer archive --format=zip --dir=var/dist --file=robole-symfony-health-bundle
+          php <<'PHP'
+          <?php
+          $package = json_decode(file_get_contents('composer.json'), true, flags: JSON_THROW_ON_ERROR);
+          $package['version'] = 'dev-main';
+          $package['dist'] = ['type' => 'zip', 'url' => 'file://'.getcwd().'/var/dist/robole-symfony-health-bundle.zip'];
+          $project = [
+              'name' => 'robole/installation-fixture',
+              'require' => ['robole/symfony-health-bundle' => '@dev'],
+              'repositories' => [['type' => 'package', 'package' => $package]],
+              'config' => ['allow-plugins' => false],
+          ];
+          file_put_contents('var/standalone/composer.json', json_encode($project, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+          PHP
+      - run: composer update --working-dir=var/standalone --no-dev --no-interaction --prefer-dist
+      - run: php tests/Fixtures/standalone-smoke.php var/standalone/vendor/autoload.php
+      - run: composer dump-autoload --working-dir=var/standalone --no-dev --classmap-authoritative
+      - run: php tests/Fixtures/standalone-smoke.php var/standalone/vendor/autoload.php --flex
+      - name: Verify restricted shared hosting
+        run: php -d disable_functions=disk_free_space,disk_total_space,opcache_get_status tests/Fixtures/standalone-smoke.php var/standalone/vendor/autoload.php --restricted

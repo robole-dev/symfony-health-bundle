@@ -1,4 +1,10 @@
-.idea
-vendor/
+/.idea/
+/vendor/
+/composer.lock
 /.php-cs-fixer.php
+/.php-cs-fixer.cache
+/.phpunit.cache/
+/var/
+/.env.local
+/.env.*.local
 *.cache
